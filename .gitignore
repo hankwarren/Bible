@@ -1,0 +1,13 @@
+bibleDB/
+*.class
+*.war
+*.ear
+*.zip
+bin/
+.classpath
+build/
+/nbproject/private/
+derby.log
+/dist/
+*.swp
+
