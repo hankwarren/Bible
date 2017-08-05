@@ -344,7 +344,8 @@ public class Bible extends javax.swing.JFrame implements
         if (args.length == 1) {
             url = "http://" + args[0];
         } else {
-            url = "http://kgdsoftware.net/HanksStudyBible";
+            //url = "http://kgdsoftware.net/HanksStudyBible";
+            url = "http://localhost/";
         }
         Setting.getString("URL", url);
     }
