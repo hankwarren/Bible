@@ -21,6 +21,7 @@ import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JMenuItem;
@@ -40,22 +41,22 @@ public class Bible extends javax.swing.JFrame implements
 
     private static Bible bible;
     public static boolean sPostingEnabled;
-    
-    private Status mStatus;
-    private boolean mChapterTableLoaded = false;
-    private boolean mBooksTableLoaded = false;
-    private boolean mVersionTableLoaded = false;
 
-    private StartFrame startFrame = null;
+    private Status mStatus;
+
+    // Assume the tables are loaded. We can change our mind later.
+    private boolean mChapterTableLoaded = true;
+    private boolean mBooksTableLoaded = true;
+    private boolean mVersionTableLoaded = true;
+
     private Executor mExecutor;
-    
-    
+
     /**
      * Creates new form Bible
      */
     private Bible(String[] args) {
         sPostingEnabled = true;
-        
+
         initComponents();
         initTables(args);
 
@@ -103,14 +104,14 @@ public class Bible extends javax.swing.JFrame implements
         booksList = new javax.swing.JList<>();
         progressBar = new javax.swing.JProgressBar();
         jMenuBar1 = new javax.swing.JMenuBar();
-        EditMenu = new javax.swing.JMenu();
-        EditPreferences = new javax.swing.JMenuItem();
-        jMenuItem2 = new javax.swing.JMenuItem();
         SettingsMenu = new javax.swing.JMenu();
         enablePostCheckBox = new javax.swing.JCheckBoxMenuItem();
         fontMenuItem = new javax.swing.JMenuItem();
         DebugMenu = new javax.swing.JMenu();
         debugDatabases = new javax.swing.JMenuItem();
+        EditMenu = new javax.swing.JMenu();
+        EditPreferences = new javax.swing.JMenuItem();
+        jMenuItem2 = new javax.swing.JMenuItem();
 
         jRadioButton1.setText("jRadioButton1");
 
@@ -138,16 +139,6 @@ public class Bible extends javax.swing.JFrame implements
         progressBar.setBorder(javax.swing.BorderFactory.createEtchedBorder());
         progressBar.setPreferredSize(new java.awt.Dimension(152, 12));
         getContentPane().add(progressBar);
-
-        EditMenu.setText("Edit");
-
-        EditPreferences.setText("Preferences");
-        EditMenu.add(EditPreferences);
-
-        jMenuItem2.setText("jMenuItem2");
-        EditMenu.add(jMenuItem2);
-
-        jMenuBar1.add(EditMenu);
 
         SettingsMenu.setText("Settings");
 
@@ -182,6 +173,16 @@ public class Bible extends javax.swing.JFrame implements
 
         jMenuBar1.add(DebugMenu);
 
+        EditMenu.setText("Edit");
+
+        EditPreferences.setText("Preferences");
+        EditMenu.add(EditPreferences);
+
+        jMenuItem2.setText("jMenuItem2");
+        EditMenu.add(jMenuItem2);
+
+        jMenuBar1.add(EditMenu);
+
         setJMenuBar(jMenuBar1);
 
         setBounds(0, 0, 322, 556);
@@ -189,6 +190,7 @@ public class Bible extends javax.swing.JFrame implements
 
     private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
         DatabaseUtils.disconnect();
+        System.out.println("formWindowClosing: ");
     }//GEN-LAST:event_formWindowClosing
 
     private void booksListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_booksListMouseClicked
@@ -218,7 +220,7 @@ public class Bible extends javax.swing.JFrame implements
     }//GEN-LAST:event_debugDatabasesActionPerformed
 
     private void enablePostCheckBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_enablePostCheckBoxActionPerformed
-        JCheckBoxMenuItem checkBox = (JCheckBoxMenuItem)(evt.getSource());
+        JCheckBoxMenuItem checkBox = (JCheckBoxMenuItem) (evt.getSource());
         sPostingEnabled = checkBox.isSelected();
     }//GEN-LAST:event_enablePostCheckBoxActionPerformed
 
@@ -228,109 +230,68 @@ public class Bible extends javax.swing.JFrame implements
 //        dialog.setVisible(true);
         JFontChooser fontChooser = new JFontChooser();
         int result = fontChooser.showDialog(this);
-        if(result == JFontChooser.OK_OPTION) {
+        if (result == JFontChooser.OK_OPTION) {
             Font font = fontChooser.getSelectedFont();
             System.out.println("Selected font: " + font);
             Setting.update("FontName", font.getFontName());
             Setting.update("FontSize", String.valueOf(font.getSize()));
-            Setting.update("FontStyle", String.valueOf(font.getStyle()));      
+            Setting.update("FontStyle", String.valueOf(font.getStyle()));
         }
     }//GEN-LAST:event_fontMenuItemActionPerformed
 
     private void initTables(String[] args) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                startFrame = new StartFrame();
-                startFrame.setVisible(true);
-            }
-        });
-
         mExecutor = Executors.newFixedThreadPool(1);
 
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                startFrame.append("Connect to database.\n");
-            }
-        });
-
+        toConsole("Connect to database.\n");
         DatabaseUtils.connect("bibleDB");
+
         Setting.create();
         initSettings(args);
 
         Status.create();    // or open Status table
         LastChapter.create();   // or open LastChapter table
         Note.create();
-
         Book.create();
+
         Status booksStatus = Status.query("Books");
         System.out.println("Books Table: " + booksStatus.toString());
 
         if (!booksStatus.getStatus().equals(Status.GOTTEN)) {
+            mBooksTableLoaded = false;
             booksStatus.setStatus(Status.GETTING).updateStatus();
-            System.out.println("Books status: " + booksStatus.toString());
-
-            SwingUtilities.invokeLater(new Runnable() {
-                @Override
-                public void run() {
-                    startFrame.append("Get Books Table.\n");
-                }
-            });
-
             mExecutor.execute(new GetBookTable(this));
-
-        } else {
-            mBooksTableLoaded = true;
-            SwingUtilities.invokeLater(new Runnable() {
-                @Override
-                public void run() {
-                    startFrame.append("Books Table loaded.\n");
-                }
-            });
-
+            toConsole("Get Books Table.\n");
         }
 
         Chapter.create();   // or open Chapter table
         Status chapterStatus = Status.query("Chapter");
 
-        System.out.println("Chapter Table: " + chapterStatus.toString());
-
         if (!chapterStatus.getStatus().equals(Status.GOTTEN)) {
+            mChapterTableLoaded = false;
             chapterStatus.setStatus(Status.GETTING).updateStatus();
-            SwingUtilities.invokeLater(new Runnable() {
-                @Override
-                public void run() {
-                    startFrame.append("Get Chapter Table.\n");
-                }
-            });
-
             mExecutor.execute(new GetChapterTable(this));
-        } else {
-            mChapterTableLoaded = true;
-            SwingUtilities.invokeLater(new Runnable() {
-                @Override
-                public void run() {
-                    startFrame.append("Chapter table loaded.\n");
-                }
-            });
-
+            toConsole("Get Chapter Table.\n");
         }
 
         Version.create();       // create or open
         Status versionStatus = Status.query("Version");
         System.out.println("Version Table: " + versionStatus.toString());
         if (!versionStatus.getStatus().equals(Status.GOTTEN)) {
+            mVersionTableLoaded = false;
             versionStatus.setStatus(Status.GETTING).updateStatus();
-
             mExecutor.execute(new GetVersionTable(this));
-        } else {
-            mVersionTableLoaded = true;
         }
 
-        if (mBooksTableLoaded && mChapterTableLoaded && mVersionTableLoaded) {
-            displayBooks();
-        }
+        displayBooks();
+    }
+
+    private void toConsole(String text) {
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                //startFrame.append(text);
+            }
+        });
 
     }
 
@@ -372,13 +333,15 @@ public class Bible extends javax.swing.JFrame implements
         }
     }
 
-    public void displayBooks() {
-        SwingUtilities.invokeLater(() -> {
-            booksList.setCellRenderer(new BooksRenderer());
-            booksList.setModel(Book.query());
-            startFrame.setVisible(false);
-            bible.setVisible(true);
-        });
+    private void displayBooks() {
+        if (mBooksTableLoaded && mChapterTableLoaded && mVersionTableLoaded) {
+            SwingUtilities.invokeLater(() -> {
+                booksList.setCellRenderer(new BooksRenderer());
+                booksList.setModel(Book.query());
+                //startFrame.setVisible(false);
+                bible.setVisible(true);
+            });
+        }
     }
 
     /**
@@ -414,7 +377,7 @@ public class Bible extends javax.swing.JFrame implements
             public void run() {
                 bible = new Bible(args);
                 //bible.setVisible(true);
-                bible.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+                bible.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             }
         });
     }
@@ -425,9 +388,7 @@ public class Bible extends javax.swing.JFrame implements
         Status books1 = Status.query("Books");
         books1.setStatus(Status.GOTTEN).updateStatus();
         mBooksTableLoaded = true;
-        if (mChapterTableLoaded && mVersionTableLoaded) {
-            displayBooks();
-        }
+        displayBooks();
     }
 
     @Override
@@ -436,9 +397,7 @@ public class Bible extends javax.swing.JFrame implements
         Status ch1 = Status.query("Chapter");
         ch1.setStatus(Status.GOTTEN).updateStatus();
         mChapterTableLoaded = true;
-        if (mBooksTableLoaded && mVersionTableLoaded) {
-            displayBooks();
-        }
+        displayBooks();
     }
 
     @Override
@@ -452,9 +411,8 @@ public class Bible extends javax.swing.JFrame implements
             Version version = Version.get(i + 1);
             Verse.create(version.getAbbreviation());
         }
-        if (mBooksTableLoaded && mChapterTableLoaded) {
-            displayBooks();
-        }
+        mVersionTableLoaded = true;
+        displayBooks();
     }
 
     public static class BooksRenderer extends JLabel implements ListCellRenderer<Book> {

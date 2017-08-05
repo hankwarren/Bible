@@ -23,8 +23,8 @@ public class Setting {
             Statement s = DatabaseUtils.connection.createStatement();
             s.execute("CREATE TABLE setting("
                     + "id INT GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1) PRIMARY KEY,"
-                    + "name VARCHAR(128),"
-                    + "value VARCHAR(256))");
+                    + "name VARCHAR(16),"
+                    + "value VARCHAR(64))");
             System.out.println("Setting.create");
 
         } catch (SQLException ex) {

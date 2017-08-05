@@ -105,7 +105,7 @@ public class GetBookTable implements Runnable {
 
         @Override
         public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
-            //System.out.println("startElement " + uri + " localName: " + localName + " qName: " + qName);
+            System.out.println("startElement " + uri + " localName: " + localName + " qName: " + qName);
             if (qName.equals("Book")) {
                 String name = null;
                 int chapters = 0;
@@ -113,7 +113,7 @@ public class GetBookTable implements Runnable {
                 String abbr = null;
                 int testamentId = 0;
                 for (int i = 0; i < attributes.getLength(); i++) {
-                    //System.out.println("attribute: " + attributes.getLocalName(i) + " = " + attributes.getValue(i));
+                    System.out.println("    attribute: " + attributes.getLocalName(i) + " = " + attributes.getValue(i));
                     if (attributes.getLocalName(i).equals("name")) {
                         name = attributes.getValue(i);
                     } else if (attributes.getLocalName(i).equals("id")) {

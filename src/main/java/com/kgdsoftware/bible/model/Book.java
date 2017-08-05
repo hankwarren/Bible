@@ -148,13 +148,16 @@ public class Book {
 
     public int insert() {
         try (Statement stmt = DatabaseUtils.connection.createStatement()) {
-            stmt.execute("INSERT INTO Books (name, chapters, abbr, testamentId)"
+            String sql = "INSERT INTO Books (name, chapters, abbr, testamentId)"
                     + "VALUES('"
                     + mName + "', "
                     + mChapters + ", "
                     + "'" + mAbbreviation + "', "
-                    + mTestamentId + ")",
-                    Statement.RETURN_GENERATED_KEYS);
+                    + mTestamentId + ")";
+            
+            stmt.execute(sql, Statement.RETURN_GENERATED_KEYS);
+            
+            System.out.println("sql: " + sql);
 
             ResultSet rs = stmt.getGeneratedKeys();
             rs.next();
